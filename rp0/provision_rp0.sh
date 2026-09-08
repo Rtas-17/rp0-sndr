@@ -32,13 +32,14 @@ else
     echo "[warn] no RP0_BUNDLE_ARCHIVE env; sourcing bundle files from /root/rp0-bundle if they exist"
 fi
 
-# ---- (C) install artifacts (from URL, or bundle placed at /root/rp0-bundle) ----
-if [ -d /root/rp0-bundle ] && [ -s /root/rp0-bundle/sndr_start.sh ]; then
-    echo "[ok] bundle present — no download needed"
+# ---- (C) bundle: self-fetch from the pinned repo if absent ----
+if [ ! -d /root/rp0-bundle ] || [ ! -s /root/rp0-bundle/sndr_start.sh ]; then
+    echo "[fetch] pulling rp0 bundle from GitHub"
+    curl -sSL https://raw.githubusercontent.com/Rtas-17/rp0-sndr/main/rp0/rp0-template-bundle.tar.gz | tar -xz -C /root
+    # tarball contains rp0-bundle/... (no api_key)
+    [ -s /root/rp0-bundle/sndr_start.sh ] && echo "[ok] bundle fetched" || { echo "[FAIL] bundle fetch failed"; exit 1; }
 else
-    echo "[err] missing /root/rp0-bundle; PROVISIONING SCRIPT expects the bundle to be"
-    echo "      baked into the docker image at /root/rp0-bundle (rp0-bigimage branch)"
-    exit 1
+    echo "[ok] bundle present"
 fi
 install -m 700 /root/rp0-bundle/sndr_start.sh /root/sndr_start.sh
 install -m 640 /root/rp0-bundle/sndr-18001-env.sh /root/sndr-18001-env.sh
